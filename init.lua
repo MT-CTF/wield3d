@@ -26,23 +26,23 @@ SOFTWARE.
 
 wield3d = {}
 
-dofile(minetest.get_modpath(minetest.get_current_modname()).."/location.lua")
+dofile(core.get_modpath(core.get_current_modname()) .. "/location.lua")
 
 local player_wielding = {}
-local has_wieldview = minetest.get_modpath("wieldview")
-local update_time = minetest.settings:get("wield3d_update_time")
-local verify_time = minetest.settings:get("wield3d_verify_time")
-local wield_scale = minetest.settings:get("wield3d_scale")
+local has_wieldview = core.get_modpath("wieldview")
+local update_time = core.settings:get("wield3d_update_time")
+local verify_time = core.settings:get("wield3d_verify_time")
+local wield_scale = core.settings:get("wield3d_scale")
 
 update_time = update_time and tonumber(update_time) or 1
 verify_time = verify_time and tonumber(verify_time) or 10
 wield_scale = wield_scale and tonumber(wield_scale) or 0.25 -- default scale
 
 local location = {
-	"Arm_Right",          -- default bone
-	{x=0, y=5.5, z=3},    -- default position
-	{x=-90, y=225, z=90}, -- default rotation
-	{x=wield_scale, y=wield_scale},
+	"Arm_Right", -- default bone
+	{x = 0, y = 5.5, z = 3}, -- default position
+	{x = -90, y = 225, z = 90}, -- default rotation
+	{x = wield_scale, y = wield_scale},
 }
 
 local function add_wield_entity(player)
@@ -53,14 +53,14 @@ local function add_wield_entity(player)
 	local pos = player:get_pos()
 	if name and pos and not player_wielding[name] then
 		pos.y = pos.y + 0.5
-		local object = minetest.add_entity(pos, "wield3d:wield_entity", name)
+		local object = core.add_entity(pos, "wield3d:wield_entity", name)
 		if object then
 			object:set_attach(player, location[1], location[2], location[3])
 			object:set_properties({
 				textures = {"wield3d:hand"},
 				visual_size = location[4],
 			})
-			player_wielding[name] = {item="", location=location}
+			player_wielding[name] = {item = "", location = location}
 		end
 	end
 end
@@ -73,13 +73,18 @@ local function sq_dist(a, b)
 end
 
 local wield_entity = {
-	physical = false,
-	collisionbox = {-0.125,-0.125,-0.125, 0.125,0.125,0.125},
-	visual = "wielditem",
-	textures = {"wield3d:hand"},
+	initial_properties ={
+		physical = false,
+		collide_with_objects = false,
+		pointable = false,
+		static_save = false,
+		collisionbox = {-0.125,-0.125,-0.125, 0.125,0.125,0.125},
+		visual = "wielditem",
+		textures = {"wield3d:hand"}
+	},
 	wielder = nil,
 	timer = 0,
-	static_save = false,
+	static_save = false
 }
 
 function wield_entity:on_activate(staticdata)
@@ -98,7 +103,7 @@ function wield_entity:on_step(dtime)
 	if self.timer < update_time then
 		return
 	end
-	local player = minetest.get_player_by_name(self.wielder)
+	local player = core.get_player_by_name(self.wielder)
 	if player == nil or not player:is_player() or
 			sq_dist(player:get_pos(), self.object:get_pos()) > 3 then
 		self.object:remove()
@@ -109,7 +114,7 @@ function wield_entity:on_step(dtime)
 	local item = stack:get_name() or ""
 	if wield and item ~= wield.item then
 		if has_wieldview then
-			local def = minetest.registered_items[item] or {}
+			local def = core.registered_items[item] or {}
 			if def.inventory_image ~= "" then
 				item = ""
 			end
@@ -150,7 +155,7 @@ local function verify_wielditems()
 	if player_iter == nil then
 		local names = {}
 		local tmp = {}
-		for player in table_iter(minetest.get_connected_players()) do
+		for player in table_iter(core.get_connected_players()) do
 			local name = player:get_player_name()
 			if name then
 				tmp[name] = true;
@@ -166,12 +171,12 @@ local function verify_wielditems()
 	 -- only deal with one player per server step
 	local name = player_iter()
 	if name then
-		local player = minetest.get_player_by_name(name)
+		local player = core.get_player_by_name(name)
 		if player and player:is_player() then
 			local pos = player:get_pos()
 			pos.y = pos.y + 0.5
 			local wielding = false
-			local objects = minetest.get_objects_inside_radius(pos, 1)
+			local objects = core.get_objects_inside_radius(pos, 1)
 			for _, object in pairs(objects) do
 				local entity = object:get_luaentity()
 				if entity and entity.wielder == name then
@@ -187,21 +192,21 @@ local function verify_wielditems()
 				add_wield_entity(player)
 			end
 		end
-		return minetest.after(0, verify_wielditems)
+		return core.after(0, verify_wielditems)
 	end
 	player_iter = nil
-	minetest.after(verify_time, verify_wielditems)
+	core.after(verify_time, verify_wielditems)
 end
 
-minetest.after(verify_time, verify_wielditems)
+core.after(verify_time, verify_wielditems)
 
-minetest.register_entity("wield3d:wield_entity", wield_entity)
+core.register_entity("wield3d:wield_entity", wield_entity)
 
-minetest.register_item("wield3d:hand", {
+core.register_item("wield3d:hand", {
 	type = "none",
-	wield_image = "blank.png",
+	wield_image = "blank.png"
 })
 
-minetest.register_on_joinplayer(function(player)
-	minetest.after(2, add_wield_entity, player)
+core.register_on_joinplayer(function(player)
+	core.after(2, add_wield_entity, player)
 end)
