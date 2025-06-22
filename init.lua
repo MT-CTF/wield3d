@@ -55,11 +55,14 @@ local function add_wield_entity(player)
 		pos.y = pos.y + 0.5
 		local object = core.add_entity(pos, "wield3d:wield_entity", name)
 		if object then
-			object:set_attach(player, location[1], location[2], location[3])
+			local setting = ctf_settings.get(player, "use_old_wielditem_display")
+
+			object:set_attach(player, location[1], location[2], location[3], setting == "false")
 			object:set_properties({
 				textures = {"wield3d:hand"},
 				visual_size = location[4],
 			})
+			player:hud_set_flags({wielditem = (setting == "true")})
 			player_wielding[name] = {item = "", location = location}
 		end
 	end
@@ -126,7 +129,7 @@ function wield_entity:on_step(dtime)
 		if loc[1] ~= wield.location[1] or
 				not vector.equals(loc[2], wield.location[2]) or
 				not vector.equals(loc[3], wield.location[3]) then
-			self.object:set_attach(player, loc[1], loc[2], loc[3])
+			self.object:set_attach(player, loc[1], loc[2], loc[3], ctf_settings.get(player, "use_old_wielditem_display") == "false")
 			wield.location = {loc[1], loc[2], loc[3]}
 		end
 		self.object:set_properties({
@@ -209,3 +212,12 @@ core.register_item("wield3d:hand", {
 core.register_on_joinplayer(function(player)
 	core.after(2, add_wield_entity, player)
 end)
+
+local S = minetest.get_translator(minetest.get_current_modname())
+ctf_settings.register("use_old_wielditem_display", {
+	label = S("Use old wielditem display"),
+	type = "bool",
+	default = "true",
+	description = S("Will use Luanti's default method of showing the wielded item.") .. "\n" ..
+		S("This won't show custom animations, but might be less jarring"),
+})
