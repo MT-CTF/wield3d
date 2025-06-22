@@ -83,8 +83,7 @@ local wield_entity = {
 		textures = {"wield3d:hand"}
 	},
 	wielder = nil,
-	timer = 0,
-	static_save = false
+	timer = 0
 }
 
 function wield_entity:on_activate(staticdata)
